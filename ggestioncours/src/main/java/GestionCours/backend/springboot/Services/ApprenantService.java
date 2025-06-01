@@ -13,11 +13,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ApprenantService {
     private final ApprenantRepository apprenantRepository ;
-    @Autowired
-    public ApprenantService( ApprenantRepository apprenantRepository) {
-    	this.apprenantRepository=apprenantRepository;
-    }
-
     public Apprenant getApprenantById(Long id) {
         return apprenantRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Apprenant non trouvé"));

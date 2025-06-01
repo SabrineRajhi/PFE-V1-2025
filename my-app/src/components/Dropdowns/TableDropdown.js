@@ -1,104 +1,157 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { createPopper } from "@popperjs/core";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Swal from "sweetalert2";
 
-import { uploadElement, fetchEspacesCoursWithElements, fileService, getAllElementCour } from '../../Services/services';
-
-const TableDropdown = ({
-  coursItem,
-  handleFileAction,
-  handleDownload,
-  handleOpenCours,
-  handleNavigateToEditCour,
-  handleDeleteCours,
-}) => {
+const TableDropdown = ({ coursItem }) => {
+  const [dropdownPopoverShow, setDropdownPopoverShow] = useState(false);
+  const btnDropdownRef = useRef(null);
+  const popoverDropdownRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Dropdown state
-  const [dropdownPopoverShow, setDropdownPopoverShow] = React.useState(false);
-  const btnDropdownRef = React.createRef();
-  const popoverDropdownRef = React.createRef();
-
-  // State to store fetched elements (to avoid redundant API calls)
-  const [fetchedElements, setFetchedElements] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const openDropdownPopover = () => {
-    createPopper(btnDropdownRef.current, popoverDropdownRef.current, {
-      placement: "left-start",
-    });
-    setDropdownPopoverShow(true);
-  };
-
-  const closeDropdownPopover = () => {
-    setDropdownPopoverShow(false);
-  };
-
-  // Fetch elements associated with the course (shared between Afficher and Télécharger)
-  const fetchElements = async () => {
-    if (fetchedElements) return fetchedElements; // Use cached result if available
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem("accesstoken");
-      if (!token) throw new Error("Aucun token d'authentification trouvé");
-
-      const response = await axios.get(
-        `http://localhost:8087/api/espace-cours/${coursItem.idespac}/element`,
+  useEffect(() => {
+    let popperInstance;
+    if (
+      dropdownPopoverShow &&
+      btnDropdownRef.current &&
+      popoverDropdownRef.current
+    ) {
+      popperInstance = createPopper(
+        btnDropdownRef.current,
+        popoverDropdownRef.current,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          placement: "left-start",
         }
       );
+      popperInstance.update();
+    }
+    return () => {
+      if (popperInstance) popperInstance.destroy();
+    };
+  }, [dropdownPopoverShow]);
 
-      const elements = response.data;
-      if (!elements || elements.length === 0) {
-        throw new Error("Aucun élément associé à ce cours.");
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        popoverDropdownRef.current &&
+        !popoverDropdownRef.current.contains(event.target) &&
+        btnDropdownRef.current &&
+        !btnDropdownRef.current.contains(event.target)
+      ) {
+        setDropdownPopoverShow(false);
       }
+    };
+    if (dropdownPopoverShow) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownPopoverShow]);
 
-      setFetchedElements(elements);
-      return elements;
+  const fetchElementByIdElt = async (id_elt) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) throw new Error("Token manquant");
+
+      const response = await axios.get(
+        `http://localhost:8087/api/element/v1/getByEspaceCoursId/${id_elt}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data;
     } catch (err) {
-      const errorMessage =
-        err.response?.status === 401
-          ? "Session expirée. Veuillez vous reconnecter."
-          : err.response?.status === 404
-          ? "Aucun élément associé à ce cours."
-          : err.message || "Erreur lors de la récupération des éléments.";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      const message =
+        err.response?.status === 400
+          ? "Élément introuvable ou erreur serveur."
+          : err.message;
+      throw new Error(message);
     }
   };
 
-  // Fetch the correct docId (id_elt) for the element associated with the course
-  const getDocId = async () => {
-    if (coursItem.elementsCours && coursItem.elementsCours.length > 0) {
-      return coursItem.elementsCours[0].element.id_elt; // Use the first element's id_elt
+  const handleAfficher = async () => {
+    setIsLoading(true);
+    try {
+      const element = await fetchElementByIdElt(coursItem.idespac);
+      if (element?.cheminElt) {
+        const fileUrl = `http://localhost:8087/${element.cheminElt}`;
+        window.open(fileUrl, "_blank");
+      } else {
+        Swal.fire(
+          "Fichier introuvable",
+          "Le fichier est manquant pour cet élément.",
+          "warning"
+        );
+      }
+    } catch (err) {
+      Swal.fire("Erreur", err.message, "error");
+    } finally {
+      setIsLoading(false);
+      setDropdownPopoverShow(false);
     }
+  };
 
-    const elements = await fetchElements();
-    return elements[0].element.id_elt;
+  const handleNavigateToEditCour = (cours) => {
+    navigate(`/ModifierCoursPage`, { state: { cours } });
+  };
+
+  const handleDeleteCours = async (id) => {
+    const isConfirmed = await Swal.fire({
+      title: "Êtes-vous sûr ?",
+      text: "Vous ne pourrez pas annuler cette action !",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Oui, supprimer !",
+      cancelButtonText: "Annuler",
+    });
+
+    if (!isConfirmed.isConfirmed) return;
+
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) throw new Error("Token manquant");
+
+      await axios.delete(
+        `http://localhost:8087/api/espaceCours/deleteEspaceCours/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      await Swal.fire({
+        title: "Supprimé !",
+        text: "Le cours a été supprimé avec succès.",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      window.location.reload();
+    } catch (err) {
+      Swal.fire({
+        title: "Erreur !",
+        text: "La suppression a échoué : " + err.message,
+        icon: "error",
+        timer: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+      setDropdownPopoverShow(false);
+    }
   };
 
   return (
     <>
-      <a
+      <button
+        type="button"
         className="text-blueGray-500 py-1 px-3"
-        href="#"
         ref={btnDropdownRef}
-        onClick={(e) => {
-          e.preventDefault();
-          dropdownPopoverShow ? closeDropdownPopover() : openDropdownPopover();
-        }}
+        onClick={() => setDropdownPopoverShow((prev) => !prev)}
       >
         <i className="fas fa-ellipsis-v"></i>
-      </a>
+      </button>
 
       <div
         ref={popoverDropdownRef}
@@ -106,77 +159,34 @@ const TableDropdown = ({
           dropdownPopoverShow ? "block" : "hidden"
         } bg-white text-base z-50 float-left py-2 list-none text-left rounded shadow-lg min-w-48`}
       >
-        {/* Bouton Afficher sécurisé */}
         <button
+          type="button"
           className="flex items-center px-4 py-2 hover:bg-blue-50 text-blue-700 font-medium transition w-full"
-          onClick={async () => {
-            try {
-              setError(null);
-              const elements = await fetchElements();
-              const url = await handleFileAction(elements[0]); // Pass the entire element object
-              if (url && url.success && url.action === 'preview') {
-                window.open(url.url, "_blank");
-              }
-            } catch (err) {
-              alert(error || err.message);
-            }
-          }}
+          onClick={handleAfficher}
           disabled={isLoading}
         >
           <i className="fa-regular fa-eye w-5 mr-3 text-blue-500"></i>
           {isLoading ? "Chargement..." : "Afficher"}
         </button>
 
-        {/* Actions */}
-        <div className="px-4 py-2 text-sm text-gray-700 space-y-1">
-          <button
-            className="block w-full text-left hover:underline text-blue-600"
-            onClick={() => handleOpenCours(coursItem)}
-          >
-            Ouvrir
-          </button>
-          <button
-            className="block w-full text-left hover:underline text-purple-600"
-            onClick={async () => {
-              try {
-                setError(null);
-                const docId = await getDocId();
-                handleDownload(docId);
-              } catch (err) {
-                alert(error || err.message);
-              }
-            }}
-            disabled={isLoading}
-          >
-            Télécharger
-          </button>
-        </div>
-
-        {/* Éditer */}
-        <a
-          href="#"
-          className="flex items-center px-4 py-2 hover:bg-yellow-50 text-yellow-700 font-medium transition"
-          onClick={(e) => {
-            e.preventDefault();
-            handleNavigateToEditCour(coursItem.idespac);
-          }}
+        <button
+          type="button"
+          className="flex items-center px-4 py-2 hover:bg-yellow-50 text-yellow-700 font-medium transition w-full"
+          onClick={() => handleNavigateToEditCour(coursItem)}
         >
           <i className="fa-solid fa-pen-to-square w-5 mr-3 text-yellow-500"></i>
           Éditer
-        </a>
+        </button>
 
-        {/* Supprimer */}
-        <a
-          href="#"
-          className="flex items-center px-4 py-2 hover:bg-red-50 text-red-700 font-medium transition"
-          onClick={(e) => {
-            e.preventDefault();
-            handleDeleteCours(coursItem.idespac);
-          }}
+        <button
+          type="button"
+          className="flex items-center px-4 py-2 hover:bg-red-50 text-red-700 font-medium transition w-full"
+          onClick={() => handleDeleteCours(coursItem.idespac)}
+          disabled={isLoading}
         >
           <i className="fa-solid fa-trash-can w-5 mr-3 text-red-500"></i>
           Supprimer
-        </a>
+        </button>
       </div>
     </>
   );

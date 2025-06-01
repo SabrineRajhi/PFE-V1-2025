@@ -10,19 +10,24 @@ export const configureApiClient = (navigate) => {
     (response) => response,
     (error) => {
       if (error.response && error.response.status === 401) {
-  const refreshToken = localStorage.getItem("refreshToken");
-  if (refreshToken && !isTokenExpired(refreshToken)) {
-    // Appeler une API pour renouveler le token
-    apiClient.post("/refresh", { refreshToken }).then((response) => {
-      localStorage.setItem("accessToken", response.data.accessToken);
-      // Réessayer la requête initiale
-    }).catch(() => {
-      navigate("/login");
-    });
-  } else {
-    navigate("/login");
-  }
-}}
+        const refreshToken = localStorage.getItem("refreshToken");
+        // eslint-disable-next-line no-undef
+        if (refreshToken && !isTokenExpired(refreshToken)) {
+          // Appeler une API pour renouveler le token
+          apiClient
+            .post("/refresh", { refreshToken })
+            .then((response) => {
+              localStorage.setItem("accessToken", response.data.accessToken);
+              // Réessayer la requête initiale
+            })
+            .catch(() => {
+              navigate("/login");
+            });
+        } else {
+          navigate("/login");
+        }
+      }
+    }
   );
 };
 

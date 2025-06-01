@@ -7,7 +7,12 @@ import "components/Cards/CardTablee.css"; // Corrected CSS import
 import { AuthContext } from "views/auth/AuthContext";
 
 export default function CardTable({ color }) {
-  const { user, logout, loading: authLoading, refreshTokenIfNeeded } = useContext(AuthContext);
+  const {
+    user,
+    logout,
+    loading: authLoading,
+    refreshTokenIfNeeded,
+  } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -32,6 +37,7 @@ export default function CardTable({ color }) {
         const response = await axios.get("http://localhost:8087/users/all", {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         });
+        console.log(response);
         setUsers(response.data);
       } catch (err) {
         if (err.response?.status === 401) {
@@ -42,7 +48,10 @@ export default function CardTable({ color }) {
             setError("Session expirée, veuillez vous reconnecter");
           }
         } else {
-          setError(err.response?.data?.message || "Erreur lors de la récupération des utilisateurs");
+          setError(
+            err.response?.data?.message ||
+              "Erreur lors de la récupération des utilisateurs"
+          );
         }
       }
     };
@@ -53,9 +62,13 @@ export default function CardTable({ color }) {
   const handleActivateClick = async (id) => {
     setActionLoading(true);
     try {
-      const response = await axios.put(`http://localhost:8087/users/activate/${id}`, {}, {
-        headers: { Authorization: `Bearer ${user.accessToken}` },
-      });
+      const response = await axios.put(
+        `http://localhost:8087/users/activate/${id}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }
+      );
       setUsers(users.map((u) => (u.id === id ? { ...u, active: true } : u)));
       setError(null);
     } catch (err) {
@@ -63,7 +76,10 @@ export default function CardTable({ color }) {
         const refreshed = await refreshTokenIfNeeded();
         if (refreshed) handleActivateClick(id);
       } else {
-        setError(err.response?.data?.message || "Erreur lors de l'activation de l'utilisateur");
+        setError(
+          err.response?.data?.message ||
+            "Erreur lors de l'activation de l'utilisateur"
+        );
       }
     } finally {
       setActionLoading(false);
@@ -84,14 +100,19 @@ export default function CardTable({ color }) {
           { reason },
           { headers: { Authorization: `Bearer ${user.accessToken}` } }
         );
-        setUsers(users.map((u) => (u.id === userToBlock ? { ...u, blocked: true } : u)));
+        setUsers(
+          users.map((u) => (u.id === userToBlock ? { ...u, blocked: true } : u))
+        );
         setError(null);
       } catch (err) {
         if (err.response?.status === 401) {
           const refreshed = await refreshTokenIfNeeded();
           if (refreshed) handleConfirmBlock();
         } else {
-          setError(err.response?.data?.message || "Erreur lors du blocage de l'utilisateur");
+          setError(
+            err.response?.data?.message ||
+              "Erreur lors du blocage de l'utilisateur"
+          );
         }
       } finally {
         setActionLoading(false);
@@ -116,14 +137,21 @@ export default function CardTable({ color }) {
           { reason },
           { headers: { Authorization: `Bearer ${user.accessToken}` } }
         );
-        setUsers(users.map((u) => (u.id === userToReject ? { ...u, rejected: true } : u)));
+        setUsers(
+          users.map((u) =>
+            u.id === userToReject ? { ...u, rejected: true } : u
+          )
+        );
         setError(null);
       } catch (err) {
         if (err.response?.status === 401) {
           const refreshed = await refreshTokenIfNeeded();
           if (refreshed) handleConfirmReject();
         } else {
-          setError(err.response?.data?.message || "Erreur lors du rejet de l'utilisateur");
+          setError(
+            err.response?.data?.message ||
+              "Erreur lors du rejet de l'utilisateur"
+          );
         }
       } finally {
         setActionLoading(false);
@@ -143,17 +171,28 @@ export default function CardTable({ color }) {
     setActionLoading(true);
     if (userToUnblock) {
       try {
-        const response = await axios.put(`http://localhost:8087/users/unblock/${userToUnblock}`, {}, {
-          headers: { Authorization: `Bearer ${user.accessToken}` },
-        });
-        setUsers(users.map((u) => (u.id === userToUnblock ? { ...u, blocked: false } : u)));
+        const response = await axios.put(
+          `http://localhost:8087/users/unblock/${userToUnblock}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }
+        );
+        setUsers(
+          users.map((u) =>
+            u.id === userToUnblock ? { ...u, blocked: false } : u
+          )
+        );
         setError(null);
       } catch (err) {
         if (err.response?.status === 401) {
           const refreshed = await refreshTokenIfNeeded();
           if (refreshed) handleConfirmUnblock();
         } else {
-          setError(err.response?.data?.message || "Erreur lors du déblocage de l'utilisateur");
+          setError(
+            err.response?.data?.message ||
+              "Erreur lors du déblocage de l'utilisateur"
+          );
         }
       } finally {
         setActionLoading(false);
@@ -317,7 +356,13 @@ export default function CardTable({ color }) {
                   {u.cle || "-"}
                 </td>
                 <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                  {u.blocked ? "Bloqué" : u.rejected ? "Rejeté" : u.active ? "Actif" : "Inactif"}
+                  {u.blocked
+                    ? "Bloqué"
+                    : u.rejected
+                    ? "Rejeté"
+                    : u.active
+                    ? "Actif"
+                    : "Inactif"}
                 </td>
                 <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-right">
                   <button

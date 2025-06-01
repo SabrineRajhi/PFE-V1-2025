@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 
 
 
-@NoArgsConstructor
+
 
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)//tasneaaleli men kol classe fille table

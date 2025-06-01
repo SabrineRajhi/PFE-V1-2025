@@ -14,12 +14,6 @@ import lombok.RequiredArgsConstructor;
 public class EnseignantService {
     private final EnseignantRepository enseignantRepository;
     
-    
-    
-    @Autowired
-    public  EnseignantService(EnseignantRepository enseignantRepository) {
-    	this.enseignantRepository=enseignantRepository;
-    }
 
     public Enseignant getEnseignantById(Long id) {
         return enseignantRepository.findById(id)

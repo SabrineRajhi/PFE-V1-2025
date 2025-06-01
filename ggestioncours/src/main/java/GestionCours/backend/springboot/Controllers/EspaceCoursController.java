@@ -37,7 +37,6 @@ public class EspaceCoursController {
     private EspaceCoursServiceInterface espaceCoursService;
 
     // Récupérer tous les espaces de cours
-    @PreAuthorize("hasAnyRole('APPRENANT', 'ENSEIGNANT', 'ADMIN')")
     @GetMapping("/getAllEspaceCours")
     public ResponseEntity<List<EspaceCours>> getAllEspaceCours() {
         List<EspaceCours> espaceCoursList = espaceCoursService.getAllespacecours();

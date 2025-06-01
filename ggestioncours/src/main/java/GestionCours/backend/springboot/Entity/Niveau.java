@@ -29,8 +29,6 @@ public class Niveau {
 
 	
 
-	public Niveau() {}
-
 
 	public Niveau(Long id, String nom, List<Chapitre> chapitres) {
 		

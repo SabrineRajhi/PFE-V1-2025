@@ -15,6 +15,7 @@ import Auth from "layouts/Auth.js";
 import Landing from "views/Landing.js";
 import Profile from "views/Profile.js";
 import Index from "views/Index.js";
+import Choisir from 'views/Choisir.js';
 
 import { AuthProvider } from './views/auth/AuthContext.js';
 import { ToastContainer } from 'react-toastify';
@@ -36,6 +37,7 @@ root.render(
         <Route path="/landing" element={<Landing />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/" element={<Index />} />
+        <Route path="/choisir" element={<Choisir />} />
 
         {/* catch-all route */}
          <Route path="*" element={<Navigate to="/" replace />} />

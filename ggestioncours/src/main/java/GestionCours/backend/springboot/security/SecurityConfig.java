@@ -87,11 +87,16 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
 
-            		.requestMatchers("/auth/login", "/auth/signup").permitAll()
+            		.requestMatchers("/auth/login", 
+            				"/auth/signup",
+            			    "/auth/forgot-password",   // Nouvelle route
+                            "/auth/reset-password"  ).permitAll()
+            		.requestMatchers("/users/**").permitAll()
 
             		.requestMatchers("/auth/validate").authenticated()
 
             		.requestMatchers("/admin/**").permitAll()
+            		.requestMatchers("/api/choisir/**").permitAll()
 
             		.requestMatchers("/users/**").permitAll()
 

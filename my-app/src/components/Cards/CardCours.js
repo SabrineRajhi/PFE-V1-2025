@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
-
+import { AuthContext } from 'views/auth/AuthContext.js';
 import TableDropdown from "components/Dropdowns/TableDropdown.js";
 import { useNavigate, useLocation } from "react-router-dom";
 
-
+import { useContext } from 'react';
 import EditCourseModal from "./EditCourseModal";
 import { uploadElement, fetchEspacesCoursWithElements, fileService, getAllElementCour } from '../../Services/services';
 
 import axios from "axios";
 
 export default function CardCours({color}) {
-
+  const { user, refreshAccessToken } = useContext(AuthContext); // Utilisez le contexte
     const location = useLocation();
   const userRole = location.state?.userRole || 'apprenant'; // Par défaut étudiant
   const navigate = useNavigate();
@@ -20,7 +20,8 @@ export default function CardCours({color}) {
 
 
   const [cours, setCours] = useState([]);
-  const [user, setUser] = useState(null);
+  //const [ user,setUser] = useState(null);
+  const [localUser, setLocalUser] = useState(null);
 
   const [file, setFile] = useState(null);
   const [desElt, setDesElt] = useState('');
@@ -55,22 +56,68 @@ export default function CardCours({color}) {
     description: ''
   });
   // 🔧 Fonction pour rediriger vers la page d’édition d’un cours
+  // Nouvelle fonction pour récupérer le token avec rafraîchissement automatique
+  const getAccessToken = async () => {
+    try {
+      // Vérifier d'abord le token actuel
+      let token = localStorage.getItem('accessToken');
+      
+      // Si pas de token, vérifier le refresh token
+      if (!token) {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          token = await refreshAccessToken();
+        }
+      }
+      
+      return token;
+    } catch (error) {
+      console.error('Erreur de token:', error);
+      navigate('/auth/login');
+      return null;
+    }
+  };
   const handleNavigateToEditCour = (id) => {
     navigate(`/cours/edit/${id}`);
   };
   
 
     //use effect 
+  // Modifier les useEffect pour utiliser la nouvelle fonction
   useEffect(() => {
-    
-    fetch('http://localhost:8087/api/type-element/getAllTypeElements')
-      .then(res => res.json())
-      .then(setTypeElements)
-      .catch(console.error);
+    const fetchData = async () => {
+      const token = await getAccessToken();
+      if (!token) return;
 
-    fetchEspacesCoursWithElements()
-      .then(setCours)
-      .catch(console.error);
+      try {
+        // Récupération des types d'éléments
+        const typeElementsResponse = await axios.get(
+          'http://localhost:8087/api/type-element/getAllTypeElements',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setTypeElements(typeElementsResponse.data);
+
+        // Récupération des espaces de cours
+        const espacesCoursResponse = await axios.get(
+          'http://localhost:8087/api/espaceCours/getAllEspaceCours',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setCours(espacesCoursResponse.data);
+      } catch (error) {
+        console.error('Erreur de chargement:', error);
+        if (error.response?.status === 401) {
+          // Token expiré, essayer de rafraîchir
+          const newToken = await refreshAccessToken();
+          if (newToken) {
+            fetchData(); // Réessayer avec le nouveau token
+          } else {
+            navigate('/auth/login');
+          }
+        }
+      }
+    };
+
+    fetchData();
   }, []);
 
 
@@ -280,7 +327,7 @@ const handleCloseModal = () => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+         setLocalUser(JSON.parse(storedUser));
       } catch (e) {
         console.error("Erreur de parsing JSON utilisateur :", e);
       }
@@ -297,9 +344,9 @@ const handleCloseModal = () => {
 
   useEffect(() => {
     const fetchCours = async () => {
-      if (!user) return;
+      if (!localUser) return;
 
-      const role = getNormalizedRole(user.roles);
+      const role = getNormalizedRole(localUser.roles);
       if (role !== "enseignant" && role !== "apprenant"&& role !== "admin") return;
 
       try {
@@ -319,7 +366,7 @@ const handleCloseModal = () => {
     };
 
     fetchCours();
-  }, [user]);
+  }, [localUser]);
   
 
 
@@ -332,7 +379,7 @@ const handleCloseModal = () => {
         }
       >
         {/* Ajouter */}
-        {getNormalizedRole(user?.roles) === "admin" && (
+        {getNormalizedRole(localUser?.roles) === "admin" && (
        <a
   href="#"
   className="flex items-center px-4 py-2 hover:bg-green-50 text-green-700 font-medium transition"

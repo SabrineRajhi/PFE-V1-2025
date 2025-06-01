@@ -9,7 +9,7 @@ const BASE_API_URL3 = 'http://localhost:8087/api/element-cours';
 
 // Helper function to get the token
 const getToken = () => {
-  const token = localStorage.getItem('accesstoken');
+  const token = localStorage.getItem('accessToken');
   if (!token) {
     console.error('Aucun token d\'authentification trouvé');
     window.location.href = '/auth/login';
@@ -20,7 +20,7 @@ const getToken = () => {
 
 // Fetch espaces de cours with elements
 export const fetchEspacesCoursWithElements = async () => {
-  const token = localStorage.getItem("accesstoken");
+  const token = localStorage.getItem("accessToken");
   if (!token) {
     throw new Error("No access token found");
   }

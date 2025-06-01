@@ -245,5 +245,15 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
     }
+    @Override
+    public User findByResetToken(String token) {
+        return userRepository.findByResetToken(token)
+            .orElseThrow(() -> new accountNotFoundException("Token invalide"));
+    }
+
+    @Override
+    public void updateUser(User user) {
+        userRepository.save(user);
+    }
 
 }

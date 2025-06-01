@@ -61,17 +61,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Fonction pour rafraîchir le token, accessible via le contexte
-  const refreshTokenIfNeeded = async () => {
-    if (!user?.refreshToken) return false;
-    const newAccessToken = await refreshAccessToken();
-    if (newAccessToken) {
-      setUser({ ...user, accessToken: newAccessToken });
-      return true;
-    } else {
-      logout();
-      return false;
-    }
-  };
+  // const refreshTokenIfNeeded = async () => {
+  //   if (!user?.refreshToken) return false;
+  //   const newAccessToken = await refreshAccessToken();
+  //   if (newAccessToken) {
+  //     setUser({ ...user, accessToken: newAccessToken });
+  //     return true;
+  //   } else {
+  //     logout();
+  //     return false;
+  //   }
+  // };
 
   const login = async (email, motdepasse) => {
     try {
@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, refreshTokenIfNeeded }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

@@ -23,5 +23,7 @@ public interface UserService {
 	void blockUser(Long userId, String reason);
 	String activateUser(Long userId);
 	User findById(long userId);
+	User findByResetToken(String token);
+	void updateUser(User user);
 
 }

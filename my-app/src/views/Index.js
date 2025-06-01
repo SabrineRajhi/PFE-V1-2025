@@ -1,10 +1,17 @@
 /*eslint-disable*/
 import React from "react";
-
+import { useNavigate } from "react-router-dom";
 import myImage from "assets/img/pattern_react.png";
 import Footer from "components/Footers/Footer.js";
 import IndexNavbar from "components/Navbars/IndexNavbar.js";
 export default function Index() {
+  const navigate = useNavigate(); // Initialiser useNavigate
+
+  // Fonction pour naviguer vers la page Choisir
+  const handlePasserTest = (e) => {
+    e.preventDefault(); // Empêche le comportement par défaut du lien
+    navigate("/choisir"); // Navigue vers la page /choisir
+  };
   return (
     <>
       <IndexNavbar fixed />
@@ -24,9 +31,9 @@ export default function Index() {
               </p>
 
               <div className="mt-12">
-                <a
-                  href=""
-                  target="_blank"
+              <a
+                  href="#"
+                  onClick={handlePasserTest} // Ajouter l'événement onClick
                   className="get-started text-white font-bold px-6 py-4 rounded outline-none focus:outline-none mr-1 mb-1 bg-lightBlue-500 active:bg-lightBlue-600 uppercase text-sm shadow hover:shadow-lg ease-linear transition-all duration-150"
                 >
                   PASSER TEST

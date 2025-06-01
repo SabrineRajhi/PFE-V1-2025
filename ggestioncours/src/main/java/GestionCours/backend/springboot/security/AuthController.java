@@ -1,6 +1,8 @@
 package GestionCours.backend.springboot.security;
 
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +51,7 @@ import GestionCours.backend.springboot.Entity.User;
 import GestionCours.backend.springboot.Exception.accountNotFoundException;
 
 import GestionCours.backend.springboot.Repositrory.UserRepository;
-
-
-
+import GestionCours.backend.springboot.Services.EmailService;
 import GestionCours.backend.springboot.Services.UserServiceImpl;
 
 import jakarta.servlet.http.Cookie;
@@ -86,7 +86,7 @@ public class AuthController {
     private  UserServiceImpl userServices;
 
     private  PasswordEncoder passwordEncoder;
-
+    private final EmailService emailService;
 
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
@@ -97,7 +97,7 @@ public class AuthController {
 
                           UserDetailsService userDetailsService, UserServiceImpl userServices, 
 
-                          PasswordEncoder passwordEncoder) {
+                          PasswordEncoder passwordEncoder,EmailService emailService) {
 
         this.authenticationManager = authenticationManager;
 
@@ -110,6 +110,7 @@ public class AuthController {
         this.userServices = userServices;
 
         this.passwordEncoder = passwordEncoder;
+        this.emailService=emailService;
 
     }
 
@@ -807,6 +808,71 @@ public class AuthController {
 
         }
 
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email requis"));
+        }
+
+        try {
+            User user = userServices.getUserByEmail(email);
+            
+            // Générer un token de réinitialisation (valide 15 min)
+            String resetToken = UUID.randomUUID().toString();
+            user.setResetToken(resetToken);
+            user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
+            userServices.updateUser(user);
+            
+            // Envoyer l'email (simulé ici par un log)
+            log.info("Lien de réinitialisation pour {} : http://localhost:3000/reset-password?token={}", 
+                     email, resetToken);
+            
+            return ResponseEntity.ok(Map.of("message", "Email de réinitialisation envoyé"));
+        } catch (accountNotFoundException e) {
+            // Ne pas révéler que l'email n'existe pas
+            log.info("Demande de réinit pour email inconnu : {}", email);
+            return ResponseEntity.ok(Map.of("message", "Si l'email existe, un lien a été envoyé"));
+        }
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("password");
+        
+        if (token == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Token et mot de passe requis"));
+        }
+
+        try {
+            User user = userServices.findByResetToken(token);
+            
+            // Vérifier la validité du token
+            if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Token expiré"));
+            }
+            
+            // Valider le nouveau mot de passe
+            String passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!])[\\w@#$%^&+=!]{8,}$";
+            if (!newPassword.matches(passwordRegex)) {
+                return ResponseEntity.badRequest().body(Map.of("message", 
+                    "Le mot de passe doit contenir 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial"));
+            }
+            
+            // Mettre à jour le mot de passe
+            user.setPassword(passwordEncoder.encode(newPassword));
+            user.setResetToken(null);
+            user.setResetTokenExpiry(null);
+            userServices.updateUser(user);
+            
+            return ResponseEntity.ok(Map.of("message", "Mot de passe réinitialisé avec succès"));
+        } catch (accountNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", "Token invalide"));
+        }
     }
 
 }

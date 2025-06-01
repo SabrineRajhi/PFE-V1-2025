@@ -22,12 +22,8 @@ public class ElementController1 {
     @PreAuthorize("hasAnyRole('APPRENANT', 'ENSEIGNANT', 'ADMIN')")
     @GetMapping("/getByEspaceCoursId/{id}")
     public ResponseEntity<?> getFirstElementByEspaceCoursId(@PathVariable Long id) {
-                System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++");
-
-                System.out.println(id);
 
         Optional<Element> optionalElement = elementService.getFirstElementByEspaceCoursId(id);
-        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++");
         System.out.println(optionalElement);
         if (optionalElement.isPresent()) {
             return ResponseEntity.ok(optionalElement.get());
@@ -36,6 +32,4 @@ public class ElementController1 {
                     .body("Aucun élément trouvé pour l'espace de cours ID : " + id);
         }
     }
-
-    // 👉 Autres méthodes...
 }

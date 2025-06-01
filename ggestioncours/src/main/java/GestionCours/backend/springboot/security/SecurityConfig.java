@@ -82,7 +82,6 @@ CorsConfigurationSource corsConfigurationSource() {
     configuration.setAllowedHeaders(Arrays.asList("*"));
     configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
     configuration.setAllowCredentials(true); // Crucial for credentials
-    
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
